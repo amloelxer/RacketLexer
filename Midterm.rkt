@@ -39,6 +39,17 @@
 
 (struct valueExpression(firstArgument))
 
+
+; Implementation of Environment
+;;; From Jeff
+; empty-env : () -> Env
+(define empty-env
+  (lambda () (list 'empty-env)))
+
+; extend-env : Var x SchemeVal x Env -> Env
+(define extend-env
+  (lambda (var val env)
+    (list 'extend-env var val env)))
   
 ;;;true, false,(,), and, or, not, xor, lambda, let, in, if, then, else, call, with}
 ;;; Build Lamba Structures to make things easier
@@ -121,18 +132,24 @@
    )
   )
 
-(define (evaluate aTree)
+
+
+(define (evaluate aTree env)
   (match aTree
     ;;; Base Case
       [(unaryExpression argumentOne) (not (evaluate argumentOne))]
     ;;; Returns true or false
       [(valueExpression argumentOne) (equal? argumentOne "true")]
-    
+      ;;Lambda
+      [(lambdaExpression argumentOne argumentTwo) (lambda (val) (evaluate argumentTwo (extend-env argumentOne val env)))] ;;;something))] ;;;nlank))]
+    ;;; And
      [(andExpression argumentOne argumentTwo) (and (evaluate argumentOne) (evaluate argumentTwo))]
+    ;;; OR
      [(orExpression argumentOne argumentTwo) (or (evaluate argumentOne) (evaluate argumentTwo))]
+    ;;; XOR
     [(xorExpression argumentOne argumentTwo) (xor (evaluate argumentOne) (evaluate argumentTwo))]
+    ;;; IF
     [(ifExpression firstArgument secondArgument thirdArgument) (if (evaluate firstArgument) (evaluate secondArgument) (evaluate thirdArgument))]
-  ;;;  [(lambdaExpression firstArgument secondArgument) (lamda (evaluate argumentOne) (evaluate argumentTwo))]
 
   
 ))
