@@ -1,0 +1,79 @@
+#lang racket
+
+(require parser-tools/lex)
+(define-tokens v (VALUE
+                  LEFTPAREN
+                  RIGHTPAREN
+                  BINARYOP
+                  UNARYOP
+                  ID))
+
+;;;true, false,(,), and, or, not, xor, lambda, let, in, if, then, else, call, with}
+
+;;; Build Lamba Structures to make things easier
+
+struct
+(define constantBoolLexer
+  (lexer
+    ["true" (token-VALUE)]
+    ["false" (token-VALUE)]
+    [#\( (token-LEFTPAREN)]
+    [#\) (token-RIGHTPAREN)]
+    ;;And 
+    [#\& (token-BINARYOP lexeme)]
+    ;;Or 
+    [#\| (token-BINARYOP lexeme)]
+    ;;Not
+    [#\! (token-UNARYOP lexeme)]
+    ;;Xor
+    [#\^ (token-BINARYOP lexeme)]
+    ;;Lambda
+    ;;WHAT KIND OF TOKENS ARE THESE
+    [#\λ (token-VALUE lexeme)]
+    ;;Let
+    ["let" (token-VALUE)]
+    ;;In
+    ["in" (token-VALUE)]
+    ;;if
+    ["if" (token-VALUE)]
+    ;;then
+    ["then" (token-VALUE)]
+    ;;else
+    ["else" (token-VALUE)]
+    ;;call
+    ["call" (token-VALUE)]
+    ;;with
+    ["with" (token-VALUE)]
+    [whitespace (constantBoolLexer input-port)]
+    [(eof) (token-EOF)]
+    ))
+
+
+;;;(define (lex-this lexer input)
+ ;;; (lambda () (lexer input)))
+
+;;;(define input (open-input-string "true"))
+(define constantBoolLexer
+  (lexer
+   [(concatenation alphabetic (repetition 1 +inf.0 (union alphabetic numeric))) (token-ID lexeme)]
+   ["true" (token-VALUE)]
+   ["false" (token-VALUE)]
+   ["and" (token-BINARYOP)]
+   ["or" (token-BINARYOP)]
+   ["xor" (token-BINARYOP)]
+   ["not" (token-UNARYOP)]
+   [#\( (token-LEFTPAREN lexeme)]
+   [#\) (token-RIGHTPAREN lexeme)]
+   [#\space (constantBoolLexer input-port)]
+   [#\newline (constantBoolLexer input-port)]
+   [whitespace (constantBoolLexer input-port)]
+   ))
+
+(define btest (open-input-string "(a0 and true)"))
+(define b1test (open-input-string "not (true and false)"))
+(define b2test (open-input-string "not (true or (true and false)"))
+                         
+(define (getTokens lex in)
+  (let [(token (lex in))]
+    (cond [(equal? token 'eof) '()]
+          [else (cons token (getTokens lex in))])))
