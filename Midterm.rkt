@@ -27,6 +27,7 @@
   (lambda () (lexer input)))
 
 (struct binaryOpExpression(firstArgument secondArgument) #:transparent)
+(struct notEqExpression(firstArgument secondArgument) #:transparent)
 (struct andExpression(firstArgument secondArgument)#:transparent)
 (struct orExpression(firstArgument secondArgument)#:transparent)
 (struct xorExpression(firstArgument secondArgument)#:transparent)
@@ -84,6 +85,8 @@
     ["or" (token-BINARYOP lexeme)]
     ;;Not
     [#\! (token-UNARYOP lexeme)]
+    ;;; Not Equal
+    ["!=" (token-BINARYOP lexeme)]
     ;;Xor
     [#\^ (token-BINARYOP lexeme)]
     ;;Lambda
@@ -125,6 +128,7 @@
      ((LEFTPAREN exp BINARYOP exp RIGHTPAREN) (cond
                                                      [(equal? $3 "&") (andExpression $2 $4)]
                                                      [(equal? $3 "or") (orExpression $2 $4)]
+                                                     [(equal? $3 "!=") (orExpression $2 $4)]
                                                      [else (xorExpression $2 $4)]))
 
      ;;;Lambda
@@ -147,7 +151,7 @@
      ;;; IF
      ((LEFTPAREN IF exp THEN exp ELSE exp RIGHTPAREN) (ifExpression $3 $5 $7))
      ;;; Call
-     ((LEFTPAREN ID WITH exp RIGHTPAREN) (callExpression $2 $4))
+     ((LEFTPAREN CALL ID WITH exp RIGHTPAREN) (callExpression $2 $4))
 
      ;;IDExpression
      ((ID) (idExpression $1))
@@ -163,6 +167,8 @@
     [(unaryExpression argumentOne) (not (evaluate argumentOne empty-env))]
     ;;Value
     [(valueExpression argumentOne) (equal? argumentOne "true")]
+    ;;Not Eq
+    [(notEqExpression argumentOne argumentTwo) (not (equal? (evaluate argumentOne empty-env) (evaluate argumentTwo empty-env)))]  
     ;;Lambda
     [(lambdaExpression argumentOne argumentTwo) (lambda (val) (evaluate argumentTwo (extend-env argumentOne val env)))]
     ;;; ID
@@ -184,6 +190,7 @@
 
 ;;;(evaluate (expparser (lex-this constantBoolLexer nottest)) (empty-env))
 (define nottest (open-input-string "(! false)"))
+(define notEqtest (open-input-string "(true != false)"))
 (define andTest (open-input-string "(false & true)"))
 (define orTest (open-input-string "(false or true)"))
 (define xorTest (open-input-string "(false ^ true)"))
