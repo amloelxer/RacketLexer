@@ -86,7 +86,8 @@
     ;;Not
     [#\! (token-UNARYOP lexeme)]
     ;;; Not Equal
-    ["!=" (token-BINARYOP lexeme)]
+    ;;; Wasn't working with != for god knows why
+    ["NotEq" (token-BINARYOP lexeme)]
     ;;Xor
     [#\^ (token-BINARYOP lexeme)]
     ;;Lambda
@@ -128,7 +129,7 @@
      ((LEFTPAREN exp BINARYOP exp RIGHTPAREN) (cond
                                                      [(equal? $3 "&") (andExpression $2 $4)]
                                                      [(equal? $3 "or") (orExpression $2 $4)]
-                                                     [(equal? $3 "!=") (orExpression $2 $4)]
+                                                     [(equal? $3 "NotEq") (orExpression $2 $4)]
                                                      [else (xorExpression $2 $4)]))
 
      ;;;Lambda
@@ -145,6 +146,7 @@
                                                                         [(equal? $5 "^") (xorExpression $4 $5 $8)]
                                                                         [(equal? $5 "true") (valueExpression $5)]
                                                                         [(equal? $5 "false") (xorExpression $5)]
+                                                                        [(equal? $5 "NotEq") (orExpression $4 $5 $8)]        
                                                                         [(equal? $5 "!") (unaryExpression $8)]))
                                                                        
 
@@ -190,7 +192,7 @@
 
 ;;;(evaluate (expparser (lex-this constantBoolLexer nottest)) (empty-env))
 (define nottest (open-input-string "(! false)"))
-(define notEqtest (open-input-string "(true != false)"))
+(define notEqtest (open-input-string "(true NotEq false)"))
 (define andTest (open-input-string "(false & true)"))
 (define orTest (open-input-string "(false or true)"))
 (define xorTest (open-input-string "(false ^ true)"))
