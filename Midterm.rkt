@@ -1,5 +1,8 @@
 #lang racket
 
+;;; Written by Alex Moller
+;;; On 10/26/16
+
 (require parser-tools/lex
          parser-tools/yacc)
 
@@ -24,17 +27,14 @@
   (lambda () (lexer input)))
 
 (struct binaryOpExpression(firstArgument secondArgument) #:transparent)
-(struct andExpression(firstArgument secondArgument))
-(struct orExpression(firstArgument secondArgument))
-(struct xorExpression(firstArgument secondArgument))
+(struct andExpression(firstArgument secondArgument)#:transparent)
+(struct orExpression(firstArgument secondArgument)#:transparent)
+(struct xorExpression(firstArgument secondArgument)#:transparent)
 (struct unaryExpression(firstArgument) #:transparent)
 (struct ifExpression(firstArgument secondArgument thirdArgument)#:transparent) 
+(struct letExpression(firstArugment secondArgument thirdArgument)#:transparent)
+(struct lambdaExpression(firstArgument secondArgument)#:transparent)
 
- ;;; Let a(first Expression) =(second expression) b (third expression)
-(struct letExpression(firstArugment secondArgument thirdArgument))
-(struct lambdaExpression(firstArgument secondArgument))
-
-;;Width is part of call
 (struct callExpression(firstArgument secondArgument))
 
 (struct valueExpression(firstArgument))
@@ -52,6 +52,23 @@
 (define extend-env
   (lambda (var val env)
     (list 'extend-env var val env)))
+
+
+;;; apply env from Jeff's Example
+(define apply-env
+  (lambda (env search-var)
+    (cond
+      ((eqv? (car env) 'empty-env)
+       (error "No Binding Found: ~s" search-var))
+      ((eqv? (car env) 'extend-env)
+       (let ((saved-var (cadr env))
+             (saved-val (caddr env))
+             (saved-env (cadddr env)))
+         (if (eqv? search-var saved-var)
+             saved-val
+             (apply-env saved-env search-var))))
+      (else
+       (error "Invalid Environment: ~s"  env)))))
   
 ;;;true, false,(,), and, or, not, xor, lambda, let, in, if, then, else, call, with}
 ;;; Build Lamba Structures to make things easier
@@ -70,7 +87,6 @@
     ;;Xor
     [#\^ (token-BINARYOP lexeme)]
     ;;Lambda
-    ;;WHAT KIND OF TOKENS ARE THESE
     [#\λ (token-VALUE lexeme)]
     ;;Let
     ["let" (token-LET lexeme)]
@@ -141,50 +157,29 @@
    )
   )
 
-
-(define apply-env
-  (lambda (env search-var)
-    (cond
-      ((eqv? (car env) 'empty-env)
-       (error "No Binding Found: ~s" search-var))
-      ((eqv? (car env) 'extend-env)
-       (let ((saved-var (cadr env))
-             (saved-val (caddr env))
-             (saved-env (cadddr env)))
-         (if (eqv? search-var saved-var)
-             saved-val
-             (apply-env saved-env search-var))))
-      (else
-       (error "Invalid Environment: ~s"  env)))))
-
 (define (evaluate aTree env)
   (match aTree
-    ;;; Base Case
-      [(unaryExpression argumentOne) (not (evaluate argumentOne empty-env))]
-    ;;; Returns true or false
-      [(valueExpression argumentOne) (equal? argumentOne "true")]
-      ;;Lambda
-      [(lambdaExpression argumentOne argumentTwo) (lambda (val) (evaluate argumentTwo (extend-env argumentOne val env)))]
-      ;;;
-   
-   
+    ;;Unary
+    [(unaryExpression argumentOne) (not (evaluate argumentOne empty-env))]
+    ;;Value
+    [(valueExpression argumentOne) (equal? argumentOne "true")]
+    ;;Lambda
+    [(lambdaExpression argumentOne argumentTwo) (lambda (val) (evaluate argumentTwo (extend-env argumentOne val env)))]
+    ;;; ID
     [(idExpression argumentOne) (apply-env env argumentOne)]
-    
     ;;;Let Expression
     [(letExpression argumentOne argumentTwo argumentThree) (evaluate argumentThree (extend-env argumentTwo argumentThree))]
-
-     ;;; And
-     [(andExpression argumentOne argumentTwo) (and (evaluate argumentOne empty-env) (evaluate argumentTwo empty-env))]
-    ;;; OR
+    ;;; And
+    [(andExpression argumentOne argumentTwo) (and (evaluate argumentOne empty-env) (evaluate argumentTwo empty-env))]
+    ;;; Xor
      [(orExpression argumentOne argumentTwo) (or (evaluate argumentOne empty-env) (evaluate argumentTwo empty-env))]
-    ;;; XOR
+    ;;; Xor
     [(xorExpression argumentOne argumentTwo) (xor (evaluate argumentOne empty-env) (evaluate argumentTwo empty-env))]
     ;;; IF
     [(ifExpression firstArgument secondArgument thirdArgument) (if (evaluate firstArgument empty-env) (evaluate secondArgument empty-env) (evaluate thirdArgument empty-env))]
-
+    ;;; Call
     [(callExpression firstArgument secondArgument) (extend-env firstArgument evaluate(secondArgument env))]
 
-  
 ))
 
 ;;;(evaluate (expparser (lex-this constantBoolLexer nottest)) (empty-env))
